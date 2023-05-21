@@ -1,0 +1,89 @@
+//tree bfs and dfs
+
+#include<bits/stdc++.h>
+#include <omp.h>
+
+using namespace std;
+
+// Binary tree node structure
+struct TreeNode {
+    int val;
+    TreeNode* left;
+    TreeNode* right;
+
+    TreeNode(int value) : val(value), left(nullptr), right(nullptr) {}
+};
+
+// Function to build a binary tree from user input
+TreeNode* buildBinaryTree() {
+    int value;
+    cout << "Enter node value (enter -1 to indicate a null node): ";
+    cin >> value;
+
+    if (value == -1) {
+        return nullptr;
+    }
+
+    TreeNode* newNode = new TreeNode(value);
+    cout << "Enter left child of " << value << ": ";
+    newNode->left = buildBinaryTree();
+    cout << "Enter right child of " << value << ": ";
+    newNode->right = buildBinaryTree();
+
+    return newNode;
+}
+
+void dfs(TreeNode* root) {
+    if (root == nullptr)
+        return;
+
+    std::stack<TreeNode*> stack;
+    stack.push(root);
+
+    #pragma omp parallel
+    {
+        while (!stack.empty()) {
+            TreeNode* current;
+            #pragma omp critical
+            {
+                if (!stack.empty()) {
+                    current = stack.top();
+                    stack.pop();
+                }
+            }
+
+            if (current != nullptr) {
+                #pragma omp critical
+                {
+                    std::cout << current->val << " ";
+                }
+
+                #pragma omp task
+                {
+                    stack.push(current->right);
+                }
+
+                #pragma omp task
+                {
+                    stack.push(current->left);
+                }
+            }
+
+            #pragma omp taskwait
+        }
+    }
+}
+
+int main() {
+    // Build the binary tree from user input
+    cout << "Enter the nodes of the binary tree (enter -1 to indicate a null node):\n";
+    TreeNode* root = buildBinaryTree();
+
+    // Perform parallel BFS on the binary tree
+//     cout << "Parallel BFS traversal: ";
+//     bfs(root);
+    cout<<"\nparallel fds traversal: ";
+    dfs(root);
+
+    return 0;
+}
